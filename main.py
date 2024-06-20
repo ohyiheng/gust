@@ -47,12 +47,50 @@ def fetch_tracks(query, headers, only_first=False, limit=5):
     if only_first == True:
         limit = 1
 
-    response = requests.get(query + f"&limit={limit}", headers={headers})
+    response = requests.get(query + f"&limit={limit}", headers=headers)
     data = response.json()
 
     if only_first == True:
         return data['tracks']['items'][0]
     return data["tracks"]["items"]
+
+def get_total_tracks(track, headers):
+    album_query = track['album']['href']
+    response = requests.get(album_query, headers=headers)
+    data = response.json()
+
+    total_discs = data['tracks']['items'][-1]['disc_number']
+
+    disc_num = track['disc_number']
+
+    i = 0
+    current_disc = data['tracks']['items'][i]['disc_number']
+    while current_disc != disc_num:
+        i += 1
+        current_disc = data['tracks']['items'][i]['disc_number']
+    
+    total_tracks = 0
+    while True:
+        total_tracks += 1
+        current_disc = data['tracks']['items'][i]['disc_number']
+        if current_disc != disc_num or i >= len(data['tracks']['items']) - 1:
+            break
+        i += 1
+
+    if total_discs != 1:
+        total_tracks -= 1
+    
+    return total_tracks
+
+def get_total_discs(track, headers):
+    album_query = track['album']['href']
+    response = requests.get(album_query, headers=headers)
+    data = response.json()
+
+    return data['tracks']['items'][-1]['disc_number']
+    
+
+
 
 def display_results(results):
     if isinstance(results, list):
