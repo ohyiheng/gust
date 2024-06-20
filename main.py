@@ -74,63 +74,71 @@ def display_results(results):
         print(f"{title} by {', '.join(artists)} in album {album}")
 
 
-def main():
-    access_token = get_access_token()
-    fetch_headers = {'Authorization': f'Bearer {access_token}'}
+# def main():
+access_token = get_access_token()
+fetch_headers = {'Authorization': f'Bearer {access_token}'}
 
-    auto_tag = input("Search and apply tags automatically? [Y/n]: ")
-    year_only = input("Use only the year for the album release date? [Y/n]: ")
+auto_tag = input("Apply tags automatically? (choosing the first result) [Y/n]: ")
+year_only = input("Use only the year for the album release date? [Y/n]: ")
 
-    if auto_tag.lower() in ['y', 'yes', '']:
-        print("Applying tags automatically (choosing the first result)...")
+if auto_tag.lower() in ['y', 'yes', '']:
+    print("Applying tags automatically...")
 
-        for audio in audio_items:
+    for audio in audio_items:
 
-            print(f"Processing: {audio.filename}")
+        print(f"Processing: {audio.filename}")
 
-            query = build_query(audio)
+        query = build_query(audio)
 
-            tracks = fetch_tracks(query, fetch_headers, only_first=True)
+        track = fetch_tracks(query, fetch_headers, only_first=True)
 
-            print(f"title       : {tracks['name']}")
-            print(f"album       : {tracks['album']['name']}")
-            if year_only.lower() in ['y', 'yes', '']:
-                print(f"date        : {tracks['album']['release_date'][:4]}")
-            else:
-                print(f"date        : {tracks['album']['release_date']}")
-                
-            if len(tracks['album']['artists']) > 1:
-                albumartist = "Various Artists"
-            else:
-                albumartist = tracks['album']['artists'][0]['name']
-            print(f"album artist: {albumartist}\n")
-        
-    else:
-        print("Manual tag selection...")
+        print(f"title       : {track['name']}")
+        print(f"album       : {track['album']['name']}")
+        if year_only.lower() in ['y', 'yes', '']:
+            print(f"date        : {track['album']['release_date'][:4]}")
+        else:
+            print(f"date        : {track['album']['release_date']}")
+            
+        if len(track['album']['artists']) > 1:
+            albumartist = "Various Artists"
+        else:
+            albumartist = track['album']['artists'][0]['name']
+        print(f"album artist: {albumartist}")
 
-        for audio in audio_items:
+        total_tracks = get_total_tracks(track, fetch_headers)
+        total_discs = get_total_discs(track, fetch_headers)
 
-            print(f"Processing: {audio.filename}")
+        print(f"track number: {track['track_number']}")  
+        print(f"total tracks: {total_tracks}")
+        print(f"disc number : {track['disc_number']}")  
+        print(f"total discs : {total_discs}\n")
+    
+else:
+    print("Manual tag selection...")
 
-            if "title" in audio.tags and "artist" in audio.tags:
-                query = f"https://api.spotify.com/v1/search?q={audio.tags["title"]}+-+{audio.tags["artist"]}&type=track" 
-                # add album to query if it's available
-                if "album" in audio.tags:
-                    query = f"https://api.spotify.com/v1/search?q={audio.tags["title"]}+-+{audio.tags["artist"]}+-+{audio.tags["album"]}&type=track" 
-            else:
-                # use filename to search as a last resort
-                query = f"https://api.spotify.com/v1/search?q={audio.filename}&type=track"
+    for audio in audio_items:
 
-            tracks = fetch_tracks(query)
+        print(f"Processing: {audio.filename}")
 
-            print("Results:")
-            # for track in tracks:
+        if "title" in audio.tags and "artist" in audio.tags:
+            query = f"https://api.spotify.com/v1/search?q={audio.tags["title"]}+-+{audio.tags["artist"]}&type=track" 
+            # add album to query if it's available
+            if "album" in audio.tags:
+                query = f"https://api.spotify.com/v1/search?q={audio.tags["title"]}+-+{audio.tags["artist"]}+-+{audio.tags["album"]}&type=track" 
+        else:
+            # use filename to search as a last resort
+            query = f"https://api.spotify.com/v1/search?q={audio.filename}&type=track"
 
-            display_results(tracks)
-            print()
+        tracks = fetch_tracks(query)
 
-if "__name__" == "__main__":
-    main()
+        print("Results:")
+        # for track in tracks:
+
+        display_results(tracks)
+        print()
+
+# if "__name__" == "__main__":
+#     main()
 
 
     # title = tracks[0]['name']
