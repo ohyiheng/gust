@@ -69,16 +69,14 @@ def get_total_tracks(track, headers):
         i += 1
         current_disc = data['tracks']['items'][i]['disc_number']
     
-    total_tracks = 0
-    while True:
-        total_tracks += 1
+    total_tracks = 1
+    while i < len(data['tracks']['items']) - 1:
         current_disc = data['tracks']['items'][i]['disc_number']
-        if current_disc != disc_num or i >= len(data['tracks']['items']) - 1:
+        next_disc = data['tracks']['items'][i+1]['disc_number']
+        if current_disc != next_disc:
             break
+        total_tracks += 1
         i += 1
-
-    if total_discs != 1:
-        total_tracks -= 1
     
     return total_tracks
 
