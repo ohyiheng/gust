@@ -5,25 +5,25 @@ import setuptools
 from base64 import b64encode
 from dotenv import load_dotenv
 
-print(setuptools.__version__)
+# Environment Variables
 load_dotenv()
-
 spotify_client_id = os.getenv('SPOTIFY_CLIENT_ID')
 spotify_client_secret = os.getenv('SPOTIFY_CLIENT_SECRET')
 
+# Spotify Authoization using Client Credentials
 auth_url = "https://accounts.spotify.com/api/token"
 auth_headers = {'Authorization': f'Basic {b64encode(f'{spotify_client_id}:{spotify_client_secret}'.encode()).decode('utf-8')}'}
 auth_data = {'grant_type': 'client_credentials'}
 
+# Getting the access token for Spotify's API
 auth_response = requests.post(auth_url, headers=auth_headers, data=auth_data)
 access_token = auth_response.json().get('access_token')
-
+# Set headers
 fetch_headers = {'Authorization': f'Bearer {access_token}'}
 
-path = './'
+path = './' # path to the music files
 all_items = os.listdir(path)
 music_items = [item for item in all_items if os.path.isfile(os.path.join(path, item)) and mutagen.File(item) != None]
-query = None
 
 def search_tracks(limit=5):
     if "title" in audio.tags and "artist" in audio.tags:
