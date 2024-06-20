@@ -25,27 +25,61 @@ all_items = os.listdir(path)
 music_items = [item for item in all_items if os.path.isfile(os.path.join(path, item)) and mutagen.File(item) != None]
 query = None
 
+def search_tracks(limit=5):
+    if "title" in audio.tags and "artist" in audio.tags:
+        query = f"https://api.spotify.com/v1/search?q={audio.tags["title"]}+-+{audio.tags["artist"]}&type=track&limit={limit}" 
+        # add album to query if it's available
+        if "album" in audio.tags:
+            query = f"https://api.spotify.com/v1/search?q={audio.tags["title"]}+-+{audio.tags["artist"]}+-+{audio.tags["album"]}&type=track&limit={limit}" 
+    else:
+        # use filename to search as a last resort
+        query = f"https://api.spotify.com/v1/search?q={audio.filename}&type=track&limit={limit}"
+
+    fetch_response = requests.get(query, headers=fetch_headers)
+    result = fetch_response.json()
+    return result["tracks"]["items"]
+
+def display_results(results):
+    for i, result in enumerate(results):
+        title = result['name']
+        artists = []
+        for artist in result['artists']:
+            artists.append(artist['name'])
+        
+        album = result['album']['name']
+        print(f"{i+1}. {title} by {', '.join(artists)} in album {album}")
+
+    
+
 for item in music_items:
     audio = mutagen.File(item, easy=True)
     print(f"Processing: {audio.filename}")
-    if "title" in audio.tags and "artist" in audio.tags:
-        query = f"https://api.spotify.com/v1/search?q={audio.tags["title"]}+-+{audio.tags["artist"]}&type=track&limit=5" 
-        # add album to query if it's available
-        if "album" in audio.tags:
-            query = f"https://api.spotify.com/v1/search?q={audio.tags["title"]}+-+{audio.tags["artist"]}+-+{audio.tags["album"]}&type=track&limit=5" 
-    else:
-        # use filename to search as a last resort
-        query = f"https://api.spotify.com/v1/search?q={audio.filename}&type=track&limit=5" 
 
-    fetch_response = requests.get(query, headers=fetch_headers)
-    fetch_data = fetch_response.json()
-    tracks = fetch_data["tracks"]["items"]
+    tracks = search_tracks()
 
     print("Results:")
-    for track in tracks:
-        print(f"track: {track['name']}")
-        print(f"artists: {track['artists'][0]['name']}")
-        print(f"album: {track['album']['name']}")
+    # for track in tracks:
+
+    display_results(tracks)
+    print()
+
+    # title = tracks[0]['name']
+    # print(f"track: {title}")
+
+    # artists = []
+    # for artist in tracks[0]['artists']:
+    #     artists.append(artist['name'])
+    # print(f"artists: {artists}")
+
+    # album = tracks[0]['album']['name']
+    # print(f"album: {album}")
+
+    # if tracks[0]['album']['artists'].length > 1:
+    #     albumartist = "Various Artists"
+    # else:
+    #     albumartist = tracks[0]['album']['artists'][0]
+    # print(f"album artist: {albumartist}\n")
+    
         
 
 # tag = {
