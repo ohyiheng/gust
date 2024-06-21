@@ -1,7 +1,9 @@
 import mutagen
+from mutagen.id3 import ID3
+from mutagen.mp3 import MP3
 import requests
 import os
-import setuptools
+import inquirer
 from base64 import b64encode
 from dotenv import load_dotenv
 
@@ -15,6 +17,7 @@ audio_items = [
     for item in all_items 
     if os.path.isfile(os.path.join(path, item)) and mutagen.File(item) != None
 ]
+
 
 def get_access_token():
     """
@@ -125,28 +128,51 @@ def get_total_discs(track_data):
     data = response.json()
 
     return data['tracks']['items'][-1]['disc_number']
-    
 
+def write_tags(audio, track_data):
+    """
+    Writes the track information to the audio file's tags.
 
+    Args:
+        audio (Audio): A mutagen FileType instance containing audio information including tags and filename.
+        track (dict): The track information fetched from Spotify's API.
+    """
+    audio.tags['title'] = track_data['name']
 
-def display_results(results):
-    if isinstance(results, list):
-        for i, result in enumerate(results):
-            title = result['name']
-            artists = []
-            for artist in result['artists']:
-                artists.append(artist['name'])
-            
-            album = result['album']['name']
-            print(f"{i+1}. {title} by {', '.join(artists)} in album {album}")
+    artists = []
+    for artist in track_data['artists']:
+        artists.append(artist['name'])
+    audio.tags['artist'] = artists
+
+    audio.tags['album'] = track_data['album']['name']
+
+    # !!! Todo: Add config option to disable automatic Various Artists 
+    # If there are multiple album artists, set it to "Various Artists" instead
+    if len(track_data['album']['artists']) > 1:
+            audio.tags['albumartist'] = "Various Artists"
     else:
-        title = results['name']
-        artists = []
-        for artist in results['artists']:
-            artists.append(artist['name'])
-        
-        album = results['album']['name']
-        print(f"{title} by {', '.join(artists)} in album {album}")
+        audio.tags['albumartist'] = track_data['album']['artists'][0]['name']
+
+    if year_only.lower() in ['y', 'yes', '']:
+        audio.tags['date'] = track_data['album']['release_date'][:4]
+    else:
+        audio.tags['date'] = track_data['album']['release_date']
+
+    if isinstance(audio, ID3) or isinstance(audio, MP3):
+        audio.tags['tracknumber'] = str(track_data['track_number']) + '/' + str(get_total_tracks(track_data))
+        audio.tags['discnumber'] = str(track_data['disc_number']) + '/' + str(get_total_discs(track_data))
+    else:
+        audio.tags['tracknumber'] = str(track_data['track_number'])
+        audio.tags['tracktotal'] = str(get_total_tracks(track_data))
+        audio.tags['discnumber'] = str(track_data['disc_number'])
+        audio.tags['disctotal'] = str(get_total_discs(track_data))
+    
+def format_tracks(tracks):
+    tracks_list = []
+    for i, track_data in enumerate(tracks):
+        str = f"{track_data['artists'][0]['name']} - {track_data['name']} [{track_data['album']['name']}]"
+        tracks_list.append((str, i))
+    return tracks_list
 
 
 # def main():
@@ -163,56 +189,42 @@ if auto_tag.lower() in ['y', 'yes', '']:
 
     for audio in audio_items:
 
-        print(f"Processing: {audio.filename}")
+        print(f"Processing  : {audio.filename}")
 
-        query = build_query(audio)
+        track_data = fetch_tracks(build_query(audio), 1)
+        
+        write_tags(audio, track_data)
+        audio.save()
 
-        track = fetch_tracks(query, fetch_headers, only_first=True)
-
-        print(f"title       : {track['name']}")
-        print(f"album       : {track['album']['name']}")
-        if year_only.lower() in ['y', 'yes', '']:
-            print(f"date        : {track['album']['release_date'][:4]}")
-        else:
-            print(f"date        : {track['album']['release_date']}")
-            
-        if len(track['album']['artists']) > 1:
-            albumartist = "Various Artists"
-        else:
-            albumartist = track['album']['artists'][0]['name']
-        print(f"album artist: {albumartist}")
-
-        total_tracks = get_total_tracks(track, fetch_headers)
-        total_discs = get_total_discs(track, fetch_headers)
-
-        print(f"track number: {track['track_number']}")  
-        print(f"total tracks: {total_tracks}")
-        print(f"disc number : {track['disc_number']}")  
-        print(f"total discs : {total_discs}\n")
+        # if remove_one_disc.lower() in ['y', 'yes', ''] and total_discs == 1:
+            # don't write disc info if there's only one disc
     
 else:
     print("Manual tag selection...")
 
     for audio in audio_items:
 
-        print(f"Processing: {audio.filename}")
+        print(f"Searching: {audio.filename}")
 
-        if "title" in audio.tags and "artist" in audio.tags:
-            query = f"https://api.spotify.com/v1/search?q={audio.tags["title"]}+-+{audio.tags["artist"]}&type=track" 
-            # add album to query if it's available
-            if "album" in audio.tags:
-                query = f"https://api.spotify.com/v1/search?q={audio.tags["title"]}+-+{audio.tags["artist"]}+-+{audio.tags["album"]}&type=track" 
-        else:
-            # use filename to search as a last resort
-            query = f"https://api.spotify.com/v1/search?q={audio.filename}&type=track"
+        tracks_data = fetch_tracks(build_query(audio), 5)
 
-        tracks = fetch_tracks(query)
+        track_list = format_tracks(tracks_data)
 
-        print("Results:")
-        # for track in tracks:
+        which_track = [
+            inquirer.List('track',
+                          message="Which track data do you want?",
+                          choices=track_list)
+        ]
 
-        display_results(tracks)
+        selected_track = inquirer.prompt(which_track)['track']
+
+        print("Writing tags...")
+        write_tags(audio, tracks_data[selected_track])
+        audio.save()
+
         print()
+
+print("Done.")
 
 # if "__name__" == "__main__":
 #     main()
