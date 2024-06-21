@@ -3,7 +3,8 @@ from mutagen.id3 import ID3
 from mutagen.mp3 import MP3
 import requests
 import os
-import inquirer
+import questionary
+from questionary import Style
 from base64 import b64encode
 from dotenv import load_dotenv
 
@@ -17,6 +18,19 @@ audio_items = [
     for item in all_items 
     if os.path.isfile(os.path.join(path, item)) and mutagen.File(item) != None
 ]
+
+fancy_style = Style([
+    ('qmark', 'fg:#fcba3f bold'),       # token in front of the question
+    ('question', 'bold'),               # question text
+    ('answer', 'fg:#fcba3f bold'),      # submitted answer text behind the question
+    ('pointer', 'fg:#fcba3f bold'),     # pointer used in select and checkbox prompts
+    ('highlighted', 'fg:#fcba3f bold'), # pointed-at choice in select and checkbox prompts
+    ('selected', 'fg:#fcba3f'),         # style for a selected item of a checkbox
+    ('separator', 'fg:#f4ce86'),        # separator in lists
+    ('instruction', ''),                # user instructions for select, rawselect, checkbox
+    ('text', ''),                       # plain text
+    ('disabled', 'fg:#858585 italic')   # disabled choices for select and checkbox prompts
+])
 
 
 def get_access_token():
@@ -32,7 +46,7 @@ def get_access_token():
 
     # Spotify Authoization using Client Credentials
     auth_url = "https://accounts.spotify.com/api/token"
-    auth_headers = {'Authorization': f'Basic {b64encode(f'{spotify_client_id}:{spotify_client_secret}'.encode()).decode('utf-8')}'}
+    auth_headers = {'Authorization': f"Basic {b64encode(f'{spotify_client_id}:{spotify_client_secret}'.encode()).decode('utf-8')}"}
     auth_data = {'grant_type': 'client_credentials'}
 
     # Getting the access token for Spotify's API
@@ -52,10 +66,10 @@ def build_query(audio):
     if "title" in audio.tags and "artist" in audio.tags:
         # add album to query if it's available
         if "album" in audio.tags:
-            query = f"https://api.spotify.com/v1/search?q={audio.tags["title"]}+-+{audio.tags["artist"]}+-+{audio.tags["album"]}&type=track" 
+            query = f"https://api.spotify.com/v1/search?q={audio.tags['title']}+-+{audio.tags['artist']}+-+{audio.tags['album']}&type=track" 
         # else use title and artist only
         else:
-            query = f"https://api.spotify.com/v1/search?q={audio.tags["title"]}+-+{audio.tags["artist"]}&type=track" 
+            query = f"https://api.spotify.com/v1/search?q={audio.tags['title']}+-+{audio.tags['artist']}&type=track" 
     # use filename for query as a last resort
     else:
         query = f"https://api.spotify.com/v1/search?q={audio.filename}&type=track"
@@ -167,13 +181,8 @@ def write_tags(audio, track_data):
         audio.tags['discnumber'] = str(track_data['disc_number'])
         audio.tags['disctotal'] = str(get_total_discs(track_data))
     
-def format_tracks(tracks):
-    tracks_list = []
-    for i, track_data in enumerate(tracks):
-        str = f"{track_data['artists'][0]['name']} - {track_data['name']} [{track_data['album']['name']}]"
-        tracks_list.append((str, i))
-    return tracks_list
-
+def format_track_data(track_data):
+        return f"Track: {track_data['artists'][0]['name']} - {track_data['name']}\n   Album: {track_data['album']['name']}"
 
 # def main():
 access_token = get_access_token()
@@ -204,27 +213,22 @@ else:
 
     for audio in audio_items:
 
-        print(f"Searching: {audio.filename}")
+        print()
+        print("Current File: " + "\033[1m" + str(audio.filename) + "\033[0m")
 
         tracks_data = fetch_tracks(build_query(audio), 5)
 
-        track_list = format_tracks(tracks_data)
+        track_choices = []
+        for i, track_data in enumerate(tracks_data):
+            track_choices.append(questionary.Choice(format_track_data(track_data), i))
 
-        which_track = [
-            inquirer.List('track',
-                          message="Which track data do you want?",
-                          choices=track_list)
-        ]
-
-        selected_track = inquirer.prompt(which_track)['track']
+        selected_track = questionary.select("Which track data do you want?", choices=track_choices, style=fancy_style).ask()
 
         print("Writing tags...")
         write_tags(audio, tracks_data[selected_track])
         audio.save()
 
-        print()
-
-print("Done.")
+print("\nDone.")
 
 # if "__name__" == "__main__":
 #     main()
