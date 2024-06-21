@@ -1,6 +1,6 @@
 # Spotify Autotagger
 
-A python utility to auto tag music files using metadata from Spotify, supports auto retrieval of:
+A python CLI utility to auto tag music files using metadata from Spotify, supports auto retrieval of:
 
 - Track Title
 - Artist(s)
@@ -11,6 +11,10 @@ A python utility to auto tag music files using metadata from Spotify, supports a
 - Total Tracks
 - Disc Number
 - Total Discs
+
+## Compatibility
+
+Currently I've only developed this with a focus on Vorbis Comments, ID3 tags are supported but I haven't thoroughly tested it yet. I also don't yet know if this works APE and MP4 formats or not.
 
 ## TODO
 
