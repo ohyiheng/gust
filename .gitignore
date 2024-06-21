@@ -168,3 +168,5 @@ cython_debug/
 *.mp3
 *.m4a
 *.opus
+
+.vscode
