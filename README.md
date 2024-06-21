@@ -15,6 +15,6 @@ A python utility to auto tag music files using metadata from Spotify, supports a
 ## TODO
 
 - [x] Search and fetch tracks from Spotify
-- [ ] Implement configuration file
+- [ ] Let users customise the behaviour of the program using config file
 - [ ] Add an option to choose from a list of query result
 - [ ] Let users select the tags they want to write
