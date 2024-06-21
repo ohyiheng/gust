@@ -12,9 +12,9 @@ A python CLI utility to auto tag music files using metadata from Spotify, suppor
 - Disc Number
 - Total Discs
 
-## Compatibility
+## Audio Format Support
 
-Currently I've only developed this with a focus on Vorbis Comments, ID3 tags are supported but I haven't thoroughly tested it yet. I also don't yet know if this works APE and MP4 formats or not.
+Currently I've only developed this with a focus on Vorbis Comments, ID3 tags are supported but I haven't thoroughly tested it yet. I also don't yet know if this works on APE and MP4 formats or not.
 
 ## TODO
 
