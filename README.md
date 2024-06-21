@@ -19,7 +19,7 @@ Currently I've only developed this with a focus on Vorbis Comments, ID3 tags are
 ## TODO
 
 - [x] Search and fetch tracks from Spotify
+- [x] Add an option to choose from a list of query result
 - [ ] Retreive album images
 - [ ] Let users customise the behaviour of the program using config file
-- [ ] Add an option to choose from a list of query result
 - [ ] Let users select the tags they want to write
