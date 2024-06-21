@@ -17,6 +17,12 @@ audio_items = [
 ]
 
 def get_access_token():
+    """
+    Retrieves the access token for Spotify's API using the client credentials flow.
+
+    Returns:
+        str: The access token for Spotify's API.
+    """
     # Spotify Client ID and Secret environment variables
     spotify_client_id = os.getenv('SPOTIFY_CLIENT_ID')
     spotify_client_secret = os.getenv('SPOTIFY_CLIENT_SECRET')
@@ -31,6 +37,15 @@ def get_access_token():
     return auth_response.json().get('access_token')
 
 def build_query(audio):
+    """
+    Builds a query string for searching tracks on Spotify based on the audio tags or filename.
+
+    Parameters:
+    audio (Audio): A mutagen FileType instance containing audio information including tags and filename.
+
+    Returns:
+    str: The query string for searching tracks on Spotify.
+    """
     if "title" in audio.tags and "artist" in audio.tags:
         # add album to query if it's available
         if "album" in audio.tags:
@@ -43,25 +58,40 @@ def build_query(audio):
         query = f"https://api.spotify.com/v1/search?q={audio.filename}&type=track"
     return query
 
-def fetch_tracks(query, headers, only_first=False, limit=5):
-    if only_first == True:
-        limit = 1
+def fetch_tracks(query, limit=5):
+    """
+    Fetches tracks from Spotify API based on the given query.
 
-    response = requests.get(query + f"&limit={limit}", headers=headers)
+    Args:
+        query (str): The search query for tracks.
+        limit (int, optional): The maximum number of tracks to fetch. Defaults to 5.
+
+    Returns:
+        list or dict: A list of track items if `limit` is greater than 1, otherwise a single track item.
+
+    """
+    response = requests.get(query + f"&limit={limit}", headers=fetch_headers)
     data = response.json()
 
-    if only_first == True:
+    if limit == 1:
         return data['tracks']['items'][0]
     return data["tracks"]["items"]
 
-def get_total_tracks(track, headers):
-    album_query = track['album']['href']
-    response = requests.get(album_query, headers=headers)
+def get_total_tracks(track_data):
+    """
+    Retrieves the total number of tracks in the same disc as the given track.
+
+    Parameters:
+    - track_data: A dictionary representing the track information.
+
+    Returns:
+    - total_tracks: An integer representing the total number of tracks in the same disc as the given track.
+    """
+    album_query = track_data['album']['href']
+    response = requests.get(album_query, headers=fetch_headers)
     data = response.json()
 
-    total_discs = data['tracks']['items'][-1]['disc_number']
-
-    disc_num = track['disc_number']
+    disc_num = track_data['disc_number']
 
     i = 0
     current_disc = data['tracks']['items'][i]['disc_number']
@@ -80,9 +110,18 @@ def get_total_tracks(track, headers):
     
     return total_tracks
 
-def get_total_discs(track, headers):
-    album_query = track['album']['href']
-    response = requests.get(album_query, headers=headers)
+def get_total_discs(track_data):
+    """
+    Retrieves the total number of discs in the album of the given track.
+
+    Parameters:
+    track_data (dict): A dictionary representing the track information.
+
+    Returns:
+    int: The total number of discs in the album.
+    """
+    album_query = track_data['album']['href']
+    response = requests.get(album_query, headers=fetch_headers)
     data = response.json()
 
     return data['tracks']['items'][-1]['disc_number']
@@ -114,8 +153,10 @@ def display_results(results):
 access_token = get_access_token()
 fetch_headers = {'Authorization': f'Bearer {access_token}'}
 
-auto_tag = input("Apply tags automatically? (choosing the first result) [Y/n]: ")
-year_only = input("Use only the year for the album release date? [Y/n]: ")
+# Configuration options
+auto_tag = input("Apply tags automatically? (choosing the first result) [Y/n] ")
+year_only = input("Use only the year for the album release date? [Y/n] ")
+remove_one_disc = input("Remove disc info when there's only one disc? [Y/n] ")
 
 if auto_tag.lower() in ['y', 'yes', '']:
     print("Applying tags automatically...")
