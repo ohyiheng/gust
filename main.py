@@ -1,6 +1,9 @@
 import mutagen
 from mutagen.id3 import ID3
-from mutagen.mp3 import MP3
+from mutagen.easyid3 import EasyID3
+from mutagen.mp3 import MP3, EasyMP3
+from mutagen.flac import FLAC
+from mutagen.oggvorbis import OggVorbis
 import requests
 import os
 import questionary
@@ -143,11 +146,11 @@ def get_total_discs(track_data):
 
     return data['tracks']['items'][-1]['disc_number']
 
-def write_tags(audio, track_data):
+def write_tags(audio, track_data, year_only, remove_one_disc):
     """
     Writes the track information to the audio file's tags.
 
-    Args:
+    Parameters:
         audio (Audio): A mutagen FileType instance containing audio information including tags and filename.
         track (dict): The track information fetched from Spotify's API.
     """
@@ -167,99 +170,140 @@ def write_tags(audio, track_data):
     else:
         audio.tags['albumartist'] = track_data['album']['artists'][0]['name']
 
-    if year_only.lower() in ['y', 'yes', '']:
+    if year_only:
         audio.tags['date'] = track_data['album']['release_date'][:4]
     else:
         audio.tags['date'] = track_data['album']['release_date']
 
-    if isinstance(audio, ID3) or isinstance(audio, MP3):
-        audio.tags['tracknumber'] = str(track_data['track_number']) + '/' + str(get_total_tracks(track_data))
-        audio.tags['discnumber'] = str(track_data['disc_number']) + '/' + str(get_total_discs(track_data))
+    # -------------- Track and Disc Numbering -------------- #
+    total_tracks = get_total_tracks(track_data)
+    total_discs = get_total_discs(track_data)
+    if isinstance(audio, EasyID3) or isinstance(audio, EasyMP3):
+        audio.tags['tracknumber'] = str(track_data['track_number']) + '/' + str(total_tracks)
+        if (not(remove_one_disc) and total_discs == 1) or total_discs > 1:
+            audio.tags['discnumber'] = str(track_data['disc_number']) + '/' + str(total_discs)
     else:
         audio.tags['tracknumber'] = str(track_data['track_number'])
-        audio.tags['tracktotal'] = str(get_total_tracks(track_data))
-        audio.tags['discnumber'] = str(track_data['disc_number'])
-        audio.tags['disctotal'] = str(get_total_discs(track_data))
-    
+        audio.tags['tracktotal'] = str(total_tracks)
+        if (not(remove_one_disc) and total_discs == 1) or total_discs > 1:
+            audio.tags['discnumber'] = str(track_data['disc_number'])
+            audio.tags['disctotal'] = str(total_discs)
+
+    audio.save()
+
+def embed_cover_art(audio, track_data):
+    """
+    Embeds cover art into an audio file.
+
+    Parameters:
+        audio (mutagen.File): The audio file object to embed the cover art into.
+        track_data (dict): A dictionary containing track metadata, including the album image URL.
+    """
+    picture_content = requests.get(track_data['album']['images'][0]['url']).content
+
+    if isinstance(audio, EasyID3) or isinstance(audio, EasyMP3):
+        audio = ID3(os.path.join(path, audio.filename))
+    if isinstance(audio, ID3):
+        apic = mutagen.id3.APIC(
+                encoding=3, # 3 is for utf-8
+                mime='image/jpeg', # image/jpeg or image/png
+                type=3, # 3 is for the cover image
+                desc='Cover',
+                data=picture_content
+            )
+        audio.delall('APIC')
+        audio.add(apic)
+        audio.save()
+    elif isinstance(audio, FLAC) or isinstance(audio, OggVorbis):
+        picture = mutagen.flac.Picture()
+        picture.type = 3
+        picture.mime = 'image/jpeg'
+        picture.desc = 'Cover'
+        picture.data = picture_content
+        
+        if isinstance(audio, FLAC):
+            audio.clear_pictures()
+            audio.add_picture(picture)
+        else:
+            encoded_data = b64encode(picture.write())
+            vcomment_value = encoded_data.decode("ascii")
+            audio['metadata_block_picture'] = [vcomment_value]
+        audio.save()
+        
 def format_track_data(track_data):
         return f"Track: {track_data['artists'][0]['name']} - {track_data['name']}\n   Album: {track_data['album']['name']}"
 
-# def main():
+# ------------------- Global variables ------------------- #
+load_dotenv() # Load environment variables from .env file
+path = './' # Path to the music files
 access_token = get_access_token()
 fetch_headers = {'Authorization': f'Bearer {access_token}'}
 
-# Configuration options
-auto_tag = input("Apply tags automatically? (choosing the first result) [Y/n] ")
-year_only = input("Use only the year for the album release date? [Y/n] ")
-remove_one_disc = input("Remove disc info when there's only one disc? [Y/n] ")
+def main():
+    all_items = os.listdir(path)
+    audio_items = [
+        mutagen.File(item, easy=True) 
+        for item in all_items 
+        if os.path.isfile(os.path.join(path, item)) and mutagen.File(os.path.join(path, item)) != None
+    ]
 
-if auto_tag.lower() in ['y', 'yes', '']:
-    print("Applying tags automatically...")
+    questionary_style = Style([
+        ('qmark', 'fg:#fcba3f bold'),       # token in front of the question
+        ('question', 'bold'),               # question text
+        ('answer', 'fg:#fcba3f bold'),      # submitted answer text behind the question
+        ('pointer', 'fg:#fcba3f bold'),     # pointer used in select and checkbox prompts
+        ('highlighted', 'fg:#fcba3f bold'), # pointed-at choice in select and checkbox prompts
+        ('selected', 'fg:#fcba3f'),         # style for a selected item of a checkbox
+        ('separator', 'fg:#f4ce86'),        # separator in lists
+        ('instruction', ''),                # user instructions for select, rawselect, checkbox
+        ('text', ''),                       # plain text
+        ('disabled', 'fg:#858585 italic')   # disabled choices for select and checkbox prompts
+    ])
 
-    for audio in audio_items:
+    # Clear the console
+    _=os.system('cls' if os.name == 'nt' else 'clear')
 
-        print(f"Processing  : {audio.filename}")
+    # Configuration options
+    config = questionary.form(
+        interactive = questionary.confirm("Interactive selection of tags?", default=False, style=questionary_style),
+        year_only = questionary.confirm("Use only the year for the date tag?", style=questionary_style),
+        remove_one_disc = questionary.confirm("Remove disc number if there's only one disc?", style=questionary_style)
+    ).ask()
 
-        track_data = fetch_tracks(build_query(audio), 1)
+    if not(config['interactive']):
+        print("Applying tags automatically...")
+
+        for audio in audio_items:
+
+            print(f"Processing: {audio.filename}")
+
+            track_data = fetch_tracks(build_query(audio), 1)
+            
+            write_tags(audio, track_data, config['year_only'], config['remove_one_disc'])
+            embed_cover_art(audio, track_data)
         
-        write_tags(audio, track_data)
-        audio.save()
+    else:
+        print("Manual tag selection...")
 
-        # if remove_one_disc.lower() in ['y', 'yes', ''] and total_discs == 1:
-            # don't write disc info if there's only one disc
-    
-else:
-    print("Manual tag selection...")
+        for audio in audio_items:
 
-    for audio in audio_items:
+            print()
+            print("Current File: " + "\033[1m" + str(audio.filename) + "\033[0m")
 
-        print()
-        print("Current File: " + "\033[1m" + str(audio.filename) + "\033[0m")
+            tracks_data = fetch_tracks(build_query(audio), 5)
 
-        tracks_data = fetch_tracks(build_query(audio), 5)
+            # A list of track choices for the user to select from
+            track_choices = []
+            for i, track_data in enumerate(tracks_data):
+                track_choices.append(questionary.Choice(format_track_data(track_data), i))
 
-        track_choices = []
-        for i, track_data in enumerate(tracks_data):
-            track_choices.append(questionary.Choice(format_track_data(track_data), i))
+            selected_track = questionary.select("Which track data do you want?", choices=track_choices, style=questionary_style).ask()
 
-        selected_track = questionary.select("Which track data do you want?", choices=track_choices, style=fancy_style).ask()
+            print("Writing tags...")
+            write_tags(audio, tracks_data[selected_track], config['year_only'], config['remove_one_disc'])
+            embed_cover_art(audio, tracks_data[selected_track])
 
-        print("Writing tags...")
-        write_tags(audio, tracks_data[selected_track])
-        audio.save()
+    print("\nDone.")
 
-print("\nDone.")
-
-# if "__name__" == "__main__":
-#     main()
-
-
-    # title = tracks[0]['name']
-    # print(f"track: {title}")
-
-    # artists = []
-    # for artist in tracks[0]['artists']:
-    #     artists.append(artist['name'])
-    # print(f"artists: {artists}")
-
-    # album = tracks[0]['album']['name']
-    # print(f"album: {album}")
-
-    # if tracks[0]['album']['artists'].length > 1:
-    #     albumartist = "Various Artists"
-    # else:
-    #     albumartist = tracks[0]['album']['artists'][0]
-    # print(f"album artist: {albumartist}\n")
-    
-        
-
-# tag = {
-#     "artist": "Something",
-#     "album": "Another Thing"
-# }
-
-# audio.tags['artist'] = "Something"
-# audio.tags['albumartist'] = "Another Thing"
-# audio.tags['album'] = "Best Album"
-# audio.save()
-# print(audio.tags)
+if __name__ == "__main__":
+    main()
