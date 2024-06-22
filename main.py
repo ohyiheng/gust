@@ -10,39 +10,19 @@ import questionary
 from questionary import Style
 from base64 import b64encode
 from dotenv import load_dotenv
+import time
 
-# Load environment variables
-load_dotenv()
-
-path = './' # path to the music files
-all_items = os.listdir(path)
-audio_items = [
-    mutagen.File(item, easy=True) 
-    for item in all_items 
-    if os.path.isfile(os.path.join(path, item)) and mutagen.File(item) != None
-]
-
-fancy_style = Style([
-    ('qmark', 'fg:#fcba3f bold'),       # token in front of the question
-    ('question', 'bold'),               # question text
-    ('answer', 'fg:#fcba3f bold'),      # submitted answer text behind the question
-    ('pointer', 'fg:#fcba3f bold'),     # pointer used in select and checkbox prompts
-    ('highlighted', 'fg:#fcba3f bold'), # pointed-at choice in select and checkbox prompts
-    ('selected', 'fg:#fcba3f'),         # style for a selected item of a checkbox
-    ('separator', 'fg:#f4ce86'),        # separator in lists
-    ('instruction', ''),                # user instructions for select, rawselect, checkbox
-    ('text', ''),                       # plain text
-    ('disabled', 'fg:#858585 italic')   # disabled choices for select and checkbox prompts
-])
-
-
-def get_access_token():
+def get_access_token(retry_count=0):
     """
     Retrieves the access token for Spotify's API using the client credentials flow.
 
     Returns:
         str: The access token for Spotify's API.
     """
+    if retry_count > 3:
+        print("Failed to get access token. Please try again later.")
+        raise SystemExit()
+    
     # Spotify Client ID and Secret environment variables
     spotify_client_id = os.getenv('SPOTIFY_CLIENT_ID')
     spotify_client_secret = os.getenv('SPOTIFY_CLIENT_SECRET')
@@ -53,7 +33,21 @@ def get_access_token():
     auth_data = {'grant_type': 'client_credentials'}
 
     # Getting the access token for Spotify's API
-    auth_response = requests.post(auth_url, headers=auth_headers, data=auth_data)
+    try:
+        auth_response = requests.post(auth_url, headers=auth_headers, data=auth_data)
+        auth_response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print("HTTP Error:")
+        raise SystemExit(e)
+    except requests.exceptions.ConnectionError as e:
+        print("Error Connecting:")
+        raise SystemExit(e)
+    except requests.exceptions.Timeout:
+        print("Connection timed out. Retrying in 5 seconds...")
+        time.sleep(5)
+        get_access_token(retry_count + 1)
+    except requests.exceptions.RequestException as e:
+        raise SystemExit(e)
     return auth_response.json().get('access_token')
 
 def build_query(audio):
@@ -82,7 +76,7 @@ def fetch_tracks(query, limit=5):
     """
     Fetches tracks from Spotify API based on the given query.
 
-    Args:
+    Parameters:
         query (str): The search query for tracks.
         limit (int, optional): The maximum number of tracks to fetch. Defaults to 5.
 
@@ -90,7 +84,19 @@ def fetch_tracks(query, limit=5):
         list or dict: A list of track items if `limit` is greater than 1, otherwise a single track item.
 
     """
-    response = requests.get(query + f"&limit={limit}", headers=fetch_headers)
+    try:
+        response = requests.get(query + f"&limit={limit}", headers=fetch_headers)
+    except requests.exceptions.HTTPError as e:
+        print("HTTP Error:")
+        raise SystemExit(e)
+    except requests.exceptions.ConnectionError as e:
+        print("Error Connecting:")
+        raise SystemExit(e)
+    except requests.exceptions.Timeout:
+        print("Connection timed out:")
+        raise SystemExit(e)
+    except requests.exceptions.RequestException as e:
+        raise SystemExit(e)
     data = response.json()
 
     if limit == 1:
@@ -163,7 +169,7 @@ def write_tags(audio, track_data, year_only, remove_one_disc):
 
     audio.tags['album'] = track_data['album']['name']
 
-    # !!! Todo: Add config option to disable automatic Various Artists 
+    # !!! Todo: Add option to configure following behavior 
     # If there are multiple album artists, set it to "Various Artists" instead
     if len(track_data['album']['artists']) > 1:
             audio.tags['albumartist'] = "Various Artists"
