@@ -51,7 +51,7 @@ A Python CLI utility to automatically tag music files using metadata retrieved f
 6. Copy `.env.example` and rename it to `.env`.
 7. Fill in your `SPOTIFY_CLIENT_ID` and `SPOTIFY_CLIENT_SECRET` in the `.env` file.
 
-### Usage
+## Usage
 
 Run the script from the command line:
 - Windows:
@@ -65,7 +65,7 @@ Run the script from the command line:
 
 Follow the prompts to apply tags automatically or select tags interactively.
 
-### Updating
+## Updating
 
 To update the program, pull the latest changes from the repository:
 ```sh
