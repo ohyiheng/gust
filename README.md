@@ -1,6 +1,6 @@
 # Spotify Autotagger
 
-A Python CLI utility to automatically tag music files using metadata retrieved from Spotify.
+A Python CLI utility to automatically tag music files using metadata retrieved from Spotify. Very much in development, expect bugs and breaking changes.
 
 ## Features
 
@@ -56,11 +56,11 @@ A Python CLI utility to automatically tag music files using metadata retrieved f
 Run the script from the command line:
 - Windows:
     ```powershell
-    python main.py
+    python spotify-autotagger.py -p "path/to/music/files"
     ```
 - Unix-based systems:
     ```sh
-    python3 main.py
+    python3 spotify-autotagger.py -p "path/to/music/files"
     ```
 
 Follow the prompts to apply tags automatically or select tags interactively.
