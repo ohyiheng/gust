@@ -1,7 +1,8 @@
+import argparse
 import mutagen
 from mutagen.id3 import ID3
 from mutagen.easyid3 import EasyID3
-from mutagen.mp3 import MP3, EasyMP3
+from mutagen.mp3 import EasyMP3
 from mutagen.flac import FLAC
 from mutagen.oggvorbis import OggVorbis
 import requests
@@ -239,16 +240,26 @@ def embed_cover_art(audio, track_data):
 def format_track_data(track_data):
         return f"Track: {track_data['artists'][0]['name']} - {track_data['name']}\n   Album: {track_data['album']['name']}"
 
+# ------------------- Argument Parser ------------------- #
+parser = argparse.ArgumentParser(
+    prog="spotitagger",
+    description="Automatically tag your music files using metadata from Spotify.")
+
+parser.add_argument('-p', '--path', type=str, required=False, default="./", help="The path to the music files. Defaults to the current directory.")
+
+args = parser.parse_args()
+path = args.path
+
 # ------------------- Global variables ------------------- #
 load_dotenv() # Load environment variables from .env file
-path = './' # Path to the music files
 access_token = get_access_token()
 fetch_headers = {'Authorization': f'Bearer {access_token}'}
 
 def main():
+
     all_items = os.listdir(path)
     audio_items = [
-        mutagen.File(item, easy=True) 
+        mutagen.File(os.path.join(path, item), easy=True) 
         for item in all_items 
         if os.path.isfile(os.path.join(path, item)) and mutagen.File(os.path.join(path, item)) != None
     ]
@@ -310,6 +321,7 @@ def main():
             embed_cover_art(audio, tracks_data[selected_track])
 
     print("\nDone.")
+    questionary.press_any_key_to_continue().ask()
 
 if __name__ == "__main__":
     main()
