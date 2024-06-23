@@ -2,6 +2,16 @@
 
 A Python CLI utility to automatically tag music files using metadata retrieved from Spotify. Very much in development, expect bugs and breaking changes.
 
+## Table of Contents
+- [Features](#features)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+  - [Obtaining Spotify API Credentials](#obtaining-spotify-api-credentials)
+- [Usage](#usage)
+- [Updating](#updating)
+- [Roadmap](#roadmap)
+
 ## Features
 
 - Automatically fetches and applies the following metadata to music files:
