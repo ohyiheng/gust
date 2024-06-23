@@ -1,6 +1,6 @@
-# Spotify Autotagger
+# GUST - Get Ur Songs Tagged
 
-A Python CLI utility to automatically tag music files using metadata retrieved from Spotify. Very much in development, expect bugs and breaking changes.
+A Python CLI utility to automatically tag your local music files using metadata retrieved from Spotify. Very much in development, expect bugs and breaking changes.
 
 ## Table of Contents
 - [Features](#features)
@@ -40,11 +40,11 @@ A Python CLI utility to automatically tag music files using metadata retrieved f
 
 1. Clone the repository:
    ```sh
-   git clone https://github.com/yourgithubusername/spotify-autotagger.git
+   git clone https://github.com/rainmrn/gust.git
    ```
 2. Navigate to the cloned directory:
    ```sh
-   cd spotify-autotagger
+   cd gust
    ```
 3. Optionally, create a virtual environment:
    ```sh
@@ -79,11 +79,11 @@ Use `-h` or `--help` to see the available options.
 Auto-tag music files in the specified path:
 - Windows:
     ```powershell
-    python spotify-autotagger.py -p "path/to/music/files"
+    python gust.py -p "path/to/music/files"
     ```
 - Unix-based systems:
     ```sh
-    python3 spotify-autotagger.py -p "path/to/music/files"
+    python3 gust.py -p "path/to/music/files"
     ```
 
 It will ask for your Spotify API credentials the first time you run the script.
@@ -92,7 +92,7 @@ It will ask for your Spotify API credentials the first time you run the script.
 
 To update the program, pull the latest changes from the repository:
 ```sh
-cd spotify-autotagger
+cd gust
 git pull 
 ```
 
