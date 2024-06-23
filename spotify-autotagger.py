@@ -225,12 +225,19 @@ def write_tags(audio, track_data, year_only, remove_one_disc):
         audio.tags['tracknumber'] = str(track_data['track_number']) + '/' + str(total_tracks)
         if (not(remove_one_disc) and total_discs == 1) or total_discs > 1:
             audio.tags['discnumber'] = str(track_data['disc_number']) + '/' + str(total_discs)
+        elif 'discnumber' in audio.tags:
+            del(audio.tags['discnumber'])
     else:
         audio.tags['tracknumber'] = str(track_data['track_number'])
         audio.tags['tracktotal'] = str(total_tracks)
         if (not(remove_one_disc) and total_discs == 1) or total_discs > 1:
             audio.tags['discnumber'] = str(track_data['disc_number'])
             audio.tags['disctotal'] = str(total_discs)
+        else:
+            if 'discnumber' in audio.tags:
+                del(audio.tags['discnumber'])
+            if 'disctotal' in audio.tags:
+                del(audio.tags['disctotal'])
 
     audio.save()
 
@@ -302,7 +309,7 @@ access_token = get_access_token()
 fetch_headers = {'Authorization': f'Bearer {access_token}'}
 
 def main():
-    
+
     audio_items = []
     for dirpath, dirs, files in os.walk(path):
         for file in files:
