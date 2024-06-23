@@ -78,7 +78,7 @@ git pull
 - [x] Search and fetch tracks from Spotify
 - [x] Add an option to choose from a list of query results
 - [x] Retrieve album images
-- [ ] CLI parameter to specify path to music files
+- [ ] CLI parameters to customise the tagging process
+- [ ] Cache Spotify access token
 - [ ] Replay gain tags?
-- [ ] Allow users to customize the behavior of the program using a config file
 - [ ] Enable users to select the tags they want to write
