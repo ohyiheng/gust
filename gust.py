@@ -22,7 +22,7 @@ def config_init(app_config_file):
         json.dump(app_config, file, indent=4)
 
 def config_load():
-    app_config_path = os.path.expandvars("%APPDATA%/spotify-autotagger/") if os.name == 'nt' else os.path.expanduser("~/.config/spotify-autotagger/")
+    app_config_path = os.path.expandvars("%APPDATA%/gust/") if os.name == 'nt' else os.path.expanduser("~/.config/gust/")
     app_config_file = os.path.join(app_config_path, 'config.json')
 
     # Create the config directory if it doesn't exist
@@ -331,7 +331,7 @@ fetch_headers = {'Authorization': f'Bearer {access_token}'}
 def main():
     # Clear the console
     _=os.system('cls' if os.name == 'nt' else 'clear')
-    
+
     print("Reading audio files...")
     audio_items = read_audio_files()
 
