@@ -36,7 +36,20 @@ A Python CLI utility to automatically tag music files using metadata retrieved f
    ```sh
    cd spotify-autotagger
    ```
-3. Install the required dependencies:
+3. Optionally, create a virtual environment:
+   ```sh
+   python -m venv venv
+   ```
+   Activate the virtual environment:
+   - Windows:
+     ```powershell
+     .\venv\Scripts\Activate.ps1
+     ```
+   - Unix-based systems:
+     ```sh
+     source venv/bin/activate
+     ```
+4. Install the required dependencies:
    ```sh
    pip install -r requirements.txt
    ```
