@@ -302,13 +302,13 @@ access_token = get_access_token()
 fetch_headers = {'Authorization': f'Bearer {access_token}'}
 
 def main():
-
-    all_items = os.listdir(path)
-    audio_items = [
-        mutagen.File(os.path.join(path, item), easy=True) 
-        for item in all_items 
-        if os.path.isfile(os.path.join(path, item)) and mutagen.File(os.path.join(path, item)) != None
-    ]
+    
+    audio_items = []
+    for dirpath, dirs, files in os.walk(path):
+        for file in files:
+            file_path = os.path.join(dirpath, file)
+            if mutagen.File(file_path) is not None: # Check if mutagen can read the file
+                audio_items.append(mutagen.File(file_path, easy=True))
 
     questionary_style = Style([
         ('qmark', 'fg:#fcba3f bold'),       # token in front of the question
