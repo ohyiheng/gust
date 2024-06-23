@@ -189,7 +189,7 @@ def get_total_discs(track_data):
 
     return data['tracks']['items'][-1]['disc_number']
 
-def write_tags(audio, track_data, year_only, remove_one_disc):
+def write_tags(audio, track_data):
     """
     Writes the track information to the audio file's tags.
 
@@ -213,24 +213,24 @@ def write_tags(audio, track_data, year_only, remove_one_disc):
     else:
         audio.tags['albumartist'] = track_data['album']['artists'][0]['name']
 
-    if year_only:
-        audio.tags['date'] = track_data['album']['release_date'][:4]
-    else:
+    if args.fulldate:
         audio.tags['date'] = track_data['album']['release_date']
+    else:
+        audio.tags['date'] = track_data['album']['release_date'][:4]
 
     # -------------- Track and Disc Numbering -------------- #
     total_tracks = get_total_tracks(track_data)
     total_discs = get_total_discs(track_data)
     if isinstance(audio, EasyID3) or isinstance(audio, EasyMP3):
         audio.tags['tracknumber'] = str(track_data['track_number']) + '/' + str(total_tracks)
-        if (not(remove_one_disc) and total_discs == 1) or total_discs > 1:
+        if (args.keep_one_disc and total_discs == 1) or total_discs > 1:
             audio.tags['discnumber'] = str(track_data['disc_number']) + '/' + str(total_discs)
         elif 'discnumber' in audio.tags:
             del(audio.tags['discnumber'])
     else:
         audio.tags['tracknumber'] = str(track_data['track_number'])
         audio.tags['tracktotal'] = str(total_tracks)
-        if (not(remove_one_disc) and total_discs == 1) or total_discs > 1:
+        if (args.keep_one_disc and total_discs == 1) or total_discs > 1:
             audio.tags['discnumber'] = str(track_data['disc_number'])
             audio.tags['disctotal'] = str(total_discs)
         else:
@@ -283,19 +283,22 @@ def embed_cover_art(audio, track_data):
 def format_track_data(track_data):
         return f"Track: {track_data['artists'][0]['name']} - {track_data['name']}\n   Album: {track_data['album']['name']}"
 
-# -------------------- Load config -------------------- #
-app_config = config_load()
-
 # ------------------ Argument Parsing ------------------ #
 parser = argparse.ArgumentParser(
     prog="spotify-autotagger",
     description="Automatically tag your music files using metadata from Spotify.")
 
-parser.add_argument('-p', '--path', type=str, required=False, default=os.path.curdir, help="The path to the music files.")
+parser.add_argument('-p', '--path', type=str, required=False, default=os.path.curdir, help="The path to the music files, defaults to the current directory")
+parser.add_argument('-i', '--interactive', action='store_true', help="select tags from query results interactively")
+parser.add_argument('-f', '--fulldate', action='store_true', help="use full date instead of just the year")
+parser.add_argument('-d', '--keep-one-disc', action='store_true', help="keep disc tags even if there's only one disc")
 # parser.add_argument('--config', type=str, required=False, help="The path to the config file.")
 
 args = parser.parse_args()
 path = args.path
+
+# -------------------- Load config -------------------- #
+app_config = config_load()
 
 while True:
     if not os.path.exists(path):
@@ -309,7 +312,6 @@ access_token = get_access_token()
 fetch_headers = {'Authorization': f'Bearer {access_token}'}
 
 def main():
-
     audio_items = []
     for dirpath, dirs, files in os.walk(path):
         for file in files:
@@ -333,14 +335,14 @@ def main():
     # Clear the console
     _=os.system('cls' if os.name == 'nt' else 'clear')
 
-    # Configuration options
-    config = questionary.form(
-        interactive = questionary.confirm("Interactive selection of tags?", default=False, style=questionary_style),
-        year_only = questionary.confirm("Use only the year for the date tag?", style=questionary_style),
-        remove_one_disc = questionary.confirm("Remove disc number if there's only one disc?", style=questionary_style)
-    ).ask()
+    # # Configuration options
+    # config = questionary.form(
+    #     interactive = questionary.confirm("Interactive selection of tags?", default=False, style=questionary_style),
+    #     year_only = questionary.confirm("Use only the year for the date tag?", style=questionary_style),
+    #     remove_one_disc = questionary.confirm("Remove disc number if there's only one disc?", style=questionary_style)
+    # ).ask()
 
-    if not(config['interactive']):
+    if not(args.interactive):
         print("Applying tags automatically...")
 
         for audio in audio_items:
@@ -349,7 +351,7 @@ def main():
 
             track_data = fetch_tracks(build_query(audio), 1)
             
-            write_tags(audio, track_data, config['year_only'], config['remove_one_disc'])
+            write_tags(audio, track_data)
             embed_cover_art(audio, track_data)
         
     else:
@@ -370,7 +372,7 @@ def main():
             selected_track = questionary.select("Which track data do you want?", choices=track_choices, style=questionary_style).ask()
 
             print("Writing tags...")
-            write_tags(audio, tracks_data[selected_track], config['year_only'], config['remove_one_disc'])
+            write_tags(audio, tracks_data[selected_track])
             embed_cover_art(audio, tracks_data[selected_track])
 
     print("\nDone.")

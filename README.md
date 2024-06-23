@@ -51,7 +51,9 @@ A Python CLI utility to automatically tag music files using metadata retrieved f
 
 ## Usage
 
-Run the script from the command line:
+Use `-h` or `--help` to see the available options.
+
+Auto-tag music files in the specified path:
 - Windows:
     ```powershell
     python spotify-autotagger.py -p "path/to/music/files"
@@ -76,7 +78,7 @@ git pull
 - [x] Search and fetch tracks from Spotify
 - [x] Add an option to choose from a list of query results
 - [x] Retrieve album images
-- [ ] CLI parameters to customise the tagging process
+- [x] CLI parameters to customise the tagging process
 - [ ] Cache Spotify access token
 - [ ] Replay gain tags?
 - [ ] Enable users to select the tags they want to write
