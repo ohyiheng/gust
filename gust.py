@@ -21,6 +21,28 @@ def config_init(app_config_file):
         }}
         json.dump(app_config, file, indent=4)
 
+def config_api():
+    app_config_path = os.path.expandvars("%APPDATA%/gust/") if os.name == 'nt' else os.path.expanduser("~/.config/gust/")
+    app_config_file = os.path.join(app_config_path, 'config.json')
+    # Create the config directory if it doesn't exist
+    os.makedirs(app_config_path, exist_ok=True)
+
+    if not os.path.exists(app_config_file):
+        config_init(app_config_file)
+    with open(app_config_file, 'r+') as file:
+        try:
+            app_config = json.load(file)
+            # Move the pointer to the beginning of the file
+            file.seek(0)
+        except json.JSONDecodeError as e:
+            print("Error decoding config.json")
+            raise SystemExit(e)
+        
+        app_config['api']['spotify_client_id'] = questionary.text("Spotify Client ID").ask()
+        app_config['api']['spotify_client_secret'] = questionary.password("Spotify Client Secret").ask()
+        
+        json.dump(app_config, file, indent=4)
+
 def config_load():
     app_config_path = os.path.expandvars("%APPDATA%/gust/") if os.name == 'nt' else os.path.expanduser("~/.config/gust/")
     app_config_file = os.path.join(app_config_path, 'config.json')
@@ -91,7 +113,7 @@ def get_access_token(retry_count=0):
         auth_response = requests.post(auth_url, headers=auth_headers, data=auth_data)
         auth_response.raise_for_status()
     except requests.exceptions.HTTPError as e:
-        print("HTTP Error:")
+        print("HTTP Error: Maybe your Spotify Client ID or Secret is incorrect? Use `--config-api` flag to reconfigure.")
         raise SystemExit(e)
     except requests.exceptions.ConnectionError as e:
         print("Error Connecting:")
@@ -309,10 +331,15 @@ parser.add_argument('-p', '--path', type=str, required=False, default=os.path.cu
 parser.add_argument('-i', '--interactive', action='store_true', help="select tags from query results interactively")
 parser.add_argument('-f', '--fulldate', action='store_true', help="use full date instead of just the year")
 parser.add_argument('-d', '--keep-one-disc', action='store_true', help="keep disc tags even if there's only one disc")
+parser.add_argument('--config-api', action='store_true', help="configure Spotify API credentials")
 # parser.add_argument('--config', type=str, required=False, help="The path to the config file.")
 
 args = parser.parse_args()
 path = args.path
+
+if args.config_api:
+    config_api()
+    raise SystemExit()
 
 # -------------------- Load config -------------------- #
 app_config = config_load()
