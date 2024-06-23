@@ -1,4 +1,5 @@
 import argparse
+import json
 import mutagen
 from mutagen.id3 import ID3
 from mutagen.easyid3 import EasyID3
@@ -13,6 +14,41 @@ from base64 import b64encode
 from dotenv import load_dotenv
 import time
 
+def config_init(app_config_file):
+    with open(app_config_file, 'w') as file:
+        app_config = {"api": {
+            "spotify_client_id": "",
+            "spotify_client_secret": ""
+        }}
+        json.dump(app_config, file, indent=4)
+
+def config_load():
+    app_config_path = os.path.expandvars("%APPDATA%/spotify-autotagger/") if os.name == 'nt' else os.path.expanduser("~/.config/spotify-autotagger/")
+    app_config_file = os.path.join(app_config_path, 'config.json')
+
+    # Create the config directory if it doesn't exist
+    os.makedirs(app_config_path, exist_ok=True)
+
+    if not os.path.exists(app_config_file):
+        config_init(app_config_file)
+
+    with open(app_config_file, 'r+') as file:
+        try:
+            app_config = json.load(file)
+            # Move the pointer to the beginning of the file
+            file.seek(0)
+        except json.JSONDecodeError as e:
+            print("Error decoding config.json")
+            raise SystemExit(e)
+        
+        if not app_config['api']['spotify_client_id'] or not app_config['api']['spotify_client_secret']:
+            app_config['api']['spotify_client_id'] = questionary.text("Spotify Client ID").ask()
+            app_config['api']['spotify_client_secret'] = questionary.password("Spotify Client Secret").ask()
+        
+        json.dump(app_config, file, indent=4)
+
+    return app_config
+
 def get_access_token(retry_count=0):
     """
     Retrieves the access token for Spotify's API using the client credentials flow.
@@ -25,8 +61,8 @@ def get_access_token(retry_count=0):
         raise SystemExit()
     
     # Spotify Client ID and Secret environment variables
-    spotify_client_id = os.getenv('SPOTIFY_CLIENT_ID')
-    spotify_client_secret = os.getenv('SPOTIFY_CLIENT_SECRET')
+    spotify_client_id = app_config['api']['spotify_client_id']
+    spotify_client_secret = app_config['api']['spotify_client_secret']
 
     # Spotify Authoization using Client Credentials
     auth_url = "https://accounts.spotify.com/api/token"
@@ -240,18 +276,28 @@ def embed_cover_art(audio, track_data):
 def format_track_data(track_data):
         return f"Track: {track_data['artists'][0]['name']} - {track_data['name']}\n   Album: {track_data['album']['name']}"
 
-# ------------------- Argument Parser ------------------- #
+# -------------------- Load config -------------------- #
+app_config = config_load()
+
+# ------------------ Argument Parsing ------------------ #
 parser = argparse.ArgumentParser(
-    prog="spotitagger",
+    prog="spotify-autotagger",
     description="Automatically tag your music files using metadata from Spotify.")
 
-parser.add_argument('-p', '--path', type=str, required=False, default="./", help="The path to the music files. Defaults to the current directory.")
+parser.add_argument('-p', '--path', type=str, required=False, default=os.path.curdir, help="The path to the music files.")
+# parser.add_argument('--config', type=str, required=False, help="The path to the config file.")
 
 args = parser.parse_args()
 path = args.path
 
+while True:
+    if not os.path.exists(path):
+        print("\nThe specified path does not exist.")
+        path = questionary.path("Retry with another path:", only_directories=True).ask()
+    else:
+        break
+
 # ------------------- Global variables ------------------- #
-load_dotenv() # Load environment variables from .env file
 access_token = get_access_token()
 fetch_headers = {'Authorization': f'Bearer {access_token}'}
 
