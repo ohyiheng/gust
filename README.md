@@ -48,8 +48,6 @@ A Python CLI utility to automatically tag music files using metadata retrieved f
 3. Spotify requires **Redirect URIs** to be added, we don't need it as we're only using the Client Credentials Flow, so just use any url (e.g. `http://localhost:8080`).
 4. Select **Web API** for the API type.
 5. Once the application is created, go to the application's settings to see your **Client ID** and **Client Secret**.
-6. Copy `.env.example` and rename it to `.env`.
-7. Fill in your `SPOTIFY_CLIENT_ID` and `SPOTIFY_CLIENT_SECRET` in the `.env` file.
 
 ## Usage
 
@@ -63,7 +61,7 @@ Run the script from the command line:
     python3 spotify-autotagger.py -p "path/to/music/files"
     ```
 
-Follow the prompts to apply tags automatically or select tags interactively.
+It will ask for your Spotify API credentials the first time you run the script.
 
 ## Updating
 
