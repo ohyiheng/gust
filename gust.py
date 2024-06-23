@@ -11,7 +11,6 @@ import os
 import questionary
 from questionary import Style
 from base64 import b64encode
-from dotenv import load_dotenv
 import time
 
 def config_init(app_config_file):
@@ -48,6 +47,24 @@ def config_load():
         json.dump(app_config, file, indent=4)
 
     return app_config
+
+def read_audio_files():
+    global path
+    audio_items = []
+
+    for dirpath, dirs, files in os.walk(path):
+        for file in files:
+            file_path = os.path.join(dirpath, file)
+            mutagen_file = mutagen.File(file_path, easy=True)
+            if isinstance(mutagen_file, FLAC) or isinstance(mutagen_file, OggVorbis) or isinstance(mutagen_file, EasyID3) or isinstance(mutagen_file, EasyMP3):
+                audio_items.append(mutagen_file)
+                
+    if not audio_items:
+        print("No audio files found in current directory.")
+        path = questionary.path("Enter another path to the music files:", only_directories=True).ask()
+        return read_audio_files()
+
+    return audio_items
 
 def get_access_token(retry_count=0):
     """
@@ -252,7 +269,7 @@ def embed_cover_art(audio, track_data):
     picture_content = requests.get(track_data['album']['images'][0]['url']).content
 
     if isinstance(audio, EasyID3) or isinstance(audio, EasyMP3):
-        audio = ID3(os.path.join(path, audio.filename))
+        audio = ID3(audio.filename)
     if isinstance(audio, ID3):
         apic = mutagen.id3.APIC(
                 encoding=3, # 3 is for utf-8
@@ -285,8 +302,8 @@ def format_track_data(track_data):
 
 # ------------------ Argument Parsing ------------------ #
 parser = argparse.ArgumentParser(
-    prog="spotify-autotagger",
-    description="Automatically tag your music files using metadata from Spotify.")
+    prog="gust",
+    description="Get Ur Songs Tagged with metadata from Spotify")
 
 parser.add_argument('-p', '--path', type=str, required=False, default=os.path.curdir, help="The path to the music files, defaults to the current directory")
 parser.add_argument('-i', '--interactive', action='store_true', help="select tags from query results interactively")
@@ -312,12 +329,11 @@ access_token = get_access_token()
 fetch_headers = {'Authorization': f'Bearer {access_token}'}
 
 def main():
-    audio_items = []
-    for dirpath, dirs, files in os.walk(path):
-        for file in files:
-            file_path = os.path.join(dirpath, file)
-            if mutagen.File(file_path) is not None: # Check if mutagen can read the file
-                audio_items.append(mutagen.File(file_path, easy=True))
+    # Clear the console
+    _=os.system('cls' if os.name == 'nt' else 'clear')
+    
+    print("Reading audio files...")
+    audio_items = read_audio_files()
 
     questionary_style = Style([
         ('qmark', 'fg:#fcba3f bold'),       # token in front of the question
@@ -332,8 +348,6 @@ def main():
         ('disabled', 'fg:#858585 italic')   # disabled choices for select and checkbox prompts
     ])
 
-    # Clear the console
-    _=os.system('cls' if os.name == 'nt' else 'clear')
 
     # # Configuration options
     # config = questionary.form(
@@ -355,7 +369,7 @@ def main():
             embed_cover_art(audio, track_data)
         
     else:
-        print("Manual tag selection...")
+        print("Applying tags interactively...")
 
         for audio in audio_items:
 
