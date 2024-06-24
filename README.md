@@ -110,4 +110,5 @@ git pull
 - [x] CLI parameters to customise the tagging process
 - [ ] Cache Spotify access token
 - [ ] Replay gain tags?
+- [ ] Rename files based on metadata
 - [ ] Enable users to select the tags they want to write
