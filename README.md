@@ -108,7 +108,8 @@ git pull
 - [x] Add an option to choose from a list of query results
 - [x] Retrieve album images
 - [x] CLI parameters to customise the tagging process
-- [ ] Cache Spotify access token
-- [ ] Replay gain tags?
+- [x] Cache Spotify access token
 - [ ] Rename files based on metadata
+- [ ] Retrieve lyrics using Netease Cloud Music API
+- [ ] Replay gain tags?
 - [ ] Enable users to select the tags they want to write
