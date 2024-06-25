@@ -13,60 +13,39 @@ from questionary import Style
 from base64 import b64encode
 import time
 
-def config_init(app_config_file):
-    with open(app_config_file, 'w') as file:
-        app_config = {"api": {
-            "spotify_client_id": "",
-            "spotify_client_secret": ""
-        }}
-        json.dump(app_config, file, indent=4)
-
-def config_api():
-    app_config_path = os.path.expandvars("%APPDATA%/gust/") if os.name == 'nt' else os.path.expanduser("~/.config/gust/")
-    app_config_file = os.path.join(app_config_path, 'config.json')
-    # Create the config directory if it doesn't exist
-    os.makedirs(app_config_path, exist_ok=True)
-
-    if not os.path.exists(app_config_file):
-        config_init(app_config_file)
-    with open(app_config_file, 'r+') as file:
-        try:
-            app_config = json.load(file)
-            # Move the pointer to the beginning of the file
-            file.seek(0)
-        except json.JSONDecodeError as e:
-            print("Error decoding config.json")
-            raise SystemExit(e)
-        
-        app_config['api']['spotify_client_id'] = questionary.text("Spotify Client ID").ask()
-        app_config['api']['spotify_client_secret'] = questionary.password("Spotify Client Secret").ask()
-        
-        json.dump(app_config, file, indent=4)
-
 def config_load():
-    app_config_path = os.path.expandvars("%APPDATA%/gust/") if os.name == 'nt' else os.path.expanduser("~/.config/gust/")
-    app_config_file = os.path.join(app_config_path, 'config.json')
-
     # Create the config directory if it doesn't exist
     os.makedirs(app_config_path, exist_ok=True)
 
-    if not os.path.exists(app_config_file):
-        config_init(app_config_file)
-
-    with open(app_config_file, 'r+') as file:
+    # Initialise config if it doesn't exist
+    if not os.path.exists(app_config_file_path):
+        with open(app_config_file_path, 'w') as file:
+            app_config = {"api": {
+                "spotify_client_id": "",
+                "spotify_client_secret": "",
+                "spotify_access_token": {
+                    "token": "",
+                    "expires": ""
+                }
+            }}
+            json.dump(app_config, file, indent=4)
+        
+    with open(app_config_file_path, 'r+') as file:
         try:
             app_config = json.load(file)
-            # Move the pointer to the beginning of the file
-            file.seek(0)
+            file.seek(0) # Move the pointer to the beginning of the file
         except json.JSONDecodeError as e:
             print("Error decoding config.json")
             raise SystemExit(e)
         
-        if not app_config['api']['spotify_client_id'] or not app_config['api']['spotify_client_secret']:
-            app_config['api']['spotify_client_id'] = questionary.text("Spotify Client ID").ask()
-            app_config['api']['spotify_client_secret'] = questionary.password("Spotify Client Secret").ask()
-        
-        json.dump(app_config, file, indent=4)
+        if args.config_api or not app_config['api']['spotify_client_id']:
+            client_id = questionary.text("Spotify Client ID:").ask()
+            app_config['api']['spotify_client_id'] = client_id
+            client_secret = questionary.password("Spotify Client Secret:").ask()
+            app_config['api']['spotify_client_secret'] = client_secret
+            json.dump(app_config, file, indent=4)
+            if args.config_api:
+                raise SystemExit()
 
     return app_config
 
@@ -88,13 +67,21 @@ def read_audio_files():
 
     return audio_items
 
-def get_access_token(retry_count=0):
+def get_access_token():
     """
     Retrieves the access token for Spotify's API using the client credentials flow.
 
     Returns:
         str: The access token for Spotify's API.
     """
+    global app_config
+    if not app_config['api']['spotify_access_token']['expires'] or float(app_config['api']['spotify_access_token']['expires']) < time.time():
+        return refresh_access_token()
+    else:    
+        return app_config['api']['spotify_access_token']['token']
+
+def refresh_access_token(retry_count=0):
+    global app_config
     if retry_count > 3:
         print("Failed to get access token. Please try again later.")
         raise SystemExit()
@@ -124,7 +111,21 @@ def get_access_token(retry_count=0):
         get_access_token(retry_count + 1)
     except requests.exceptions.RequestException as e:
         raise SystemExit(e)
-    return auth_response.json().get('access_token')
+    access_token = auth_response.json().get('access_token')
+
+    with open(app_config_file_path, 'r+') as file:
+        try:
+            app_config = json.load(file)
+            file.seek(0) # Move the pointer to the beginning of the file
+        except json.JSONDecodeError as e:
+            print("Error decoding config.json")
+            raise SystemExit(e)
+        
+        app_config['api']['spotify_access_token']['token'] = access_token
+        app_config['api']['spotify_access_token']['expires'] = time.time() + 3600
+        json.dump(app_config, file, indent=4)
+    
+    return access_token
 
 def build_query(audio):
     """
@@ -162,6 +163,7 @@ def fetch_tracks(query, limit=5):
     """
     try:
         response = requests.get(query + f"&limit={limit}", headers=fetch_headers)
+        response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         print("HTTP Error:")
         raise SystemExit(e)
@@ -337,11 +339,9 @@ parser.add_argument('--config-api', action='store_true', help="configure Spotify
 args = parser.parse_args()
 path = args.path
 
-if args.config_api:
-    config_api()
-    raise SystemExit()
-
 # -------------------- Load config -------------------- #
+app_config_path = os.path.expandvars("%APPDATA%/gust/") if os.name == 'nt' else os.path.expanduser("~/.config/gust/")
+app_config_file_path = os.path.join(app_config_path, 'config.json')
 app_config = config_load()
 
 while True:
