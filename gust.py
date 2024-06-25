@@ -13,6 +13,22 @@ from questionary import Style
 from base64 import b64encode
 import time
 
+def config_reset():
+    os.makedirs(app_config_path, exist_ok=True)
+
+    with open(app_config_file_path, 'w') as file:
+        file.truncate()
+        app_config = {"api": {
+            "spotify_client_id": "",
+            "spotify_client_secret": "",
+            "spotify_access_token": {
+                "token": "",
+                "expires": ""
+            }
+        }}
+        json.dump(app_config, file, indent=4)
+
+
 def config_load():
     # Create the config directory if it doesn't exist
     os.makedirs(app_config_path, exist_ok=True)
@@ -33,7 +49,6 @@ def config_load():
     with open(app_config_file_path, 'r+') as file:
         try:
             app_config = json.load(file)
-            file.seek(0) # Move the pointer to the beginning of the file
         except json.JSONDecodeError as e:
             print("Error decoding config.json")
             raise SystemExit(e)
@@ -43,8 +58,12 @@ def config_load():
             app_config['api']['spotify_client_id'] = client_id
             client_secret = questionary.password("Spotify Client Secret:").ask()
             app_config['api']['spotify_client_secret'] = client_secret
+
+            file.seek(0) # Move the pointer to the beginning of the file
+            file.truncate()
             json.dump(app_config, file, indent=4)
             if args.config_api:
+                print("API credentials updated.")
                 raise SystemExit()
 
     return app_config
@@ -117,6 +136,7 @@ def refresh_access_token(retry_count=0):
         try:
             app_config = json.load(file)
             file.seek(0) # Move the pointer to the beginning of the file
+            file.truncate()
         except json.JSONDecodeError as e:
             print("Error decoding config.json")
             raise SystemExit(e)
@@ -334,6 +354,8 @@ parser.add_argument('-i', '--interactive', action='store_true', help="select tag
 parser.add_argument('-f', '--fulldate', action='store_true', help="use full date instead of just the year")
 parser.add_argument('-d', '--keep-one-disc', action='store_true', help="keep disc tags even if there's only one disc")
 parser.add_argument('--config-api', action='store_true', help="configure Spotify API credentials")
+parser.add_argument('--config-reset', action='store_true', help="reset config.json (mainly for debug purpose)")
+parser.add_argument('--refresh-token', action='store_true', help="refresh access token")
 # parser.add_argument('--config', type=str, required=False, help="The path to the config file.")
 
 args = parser.parse_args()
@@ -342,8 +364,19 @@ path = args.path
 # -------------------- Load config -------------------- #
 app_config_path = os.path.expandvars("%APPDATA%/gust/") if os.name == 'nt' else os.path.expanduser("~/.config/gust/")
 app_config_file_path = os.path.join(app_config_path, 'config.json')
+
+if args.config_reset:
+    config_reset()
+    print("Config reset.")
+    exit()
+
 app_config = config_load()
 
+if args.refresh_token:
+    refresh_access_token()
+    print("Access token refreshed.")
+    exit()
+    
 while True:
     if not os.path.exists(path):
         print("\nThe specified path does not exist.")
