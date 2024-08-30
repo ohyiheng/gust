@@ -1,6 +1,6 @@
 # GUST - Get Ur Songs Tagged
 
-GUST is a Python CLI utility to automatically tag your local music files using metadata retrieved from Spotify. Very much in development, expect bugs and breaking changes.
+GUST is a Python CLI utility to automatically tag your local music files using metadata retrieved from Spotify. It's very early in development so expect bugs and stuff not working here and there.
 
 Automatic tagging:
 ![showcase](/static/showcase.gif)
@@ -39,7 +39,6 @@ Interactive mode:
 ### Prerequisites
 
 - Python 3.6 or later
-- `pip` for installing dependencies
 - A [Spotify Developer](https://developer.spotify.com) account to obtain API credentials
 
 ### Installation
