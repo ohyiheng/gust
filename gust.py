@@ -28,7 +28,6 @@ def config_reset():
         }}
         json.dump(app_config, file, indent=4)
 
-
 def config_load():
     # Create the config directory if it doesn't exist
     os.makedirs(app_config_path, exist_ok=True)
@@ -69,19 +68,27 @@ def config_load():
     return app_config
 
 def read_audio_files():
-    global path
+    global music_path
     audio_items = []
 
-    for dirpath, dirs, files in os.walk(path):
+    for dirpath, dirs, files in os.walk(music_path):
         for file in files:
+            if (not (file.endswith(".mp3") or
+                     file.endswith(".flac") or
+                     file.endswith(".ogg") or
+                     file.endswith(".opus"))):
+                continue
             file_path = os.path.join(dirpath, file)
             mutagen_file = mutagen.File(file_path, easy=True)
-            if isinstance(mutagen_file, FLAC) or isinstance(mutagen_file, OggVorbis) or isinstance(mutagen_file, EasyID3) or isinstance(mutagen_file, EasyMP3):
+            if (isinstance(mutagen_file, FLAC) or
+                isinstance(mutagen_file, OggVorbis) or
+                isinstance(mutagen_file, EasyID3) or
+                isinstance(mutagen_file, EasyMP3)):
                 audio_items.append(mutagen_file)
                 
     if not audio_items:
         print("No audio files found in current directory.")
-        path = questionary.path("Enter another path to the music files:", only_directories=True).ask()
+        music_path = questionary.path("Enter another path to the music files:", only_directories=True).ask()
         return read_audio_files()
 
     return audio_items
@@ -359,7 +366,7 @@ parser.add_argument('--refresh-token', action='store_true', help="refresh access
 # parser.add_argument('--config', type=str, required=False, help="The path to the config file.")
 
 args = parser.parse_args()
-path = args.path
+music_path = args.path
 
 # -------------------- Load config -------------------- #
 app_config_path = os.path.expandvars("%APPDATA%/gust/") if os.name == 'nt' else os.path.expanduser("~/.config/gust/")
@@ -378,13 +385,12 @@ if args.refresh_token:
     exit()
     
 while True:
-    if not os.path.exists(path):
+    if not os.path.exists(music_path):
         print("\nThe specified path does not exist.")
-        path = questionary.path("Retry with another path:", only_directories=True).ask()
+        music_path = questionary.path("Retry with another path:", only_directories=True).ask()
     else:
         break
 
-# ------------------- Global variables ------------------- #
 access_token = get_access_token()
 fetch_headers = {'Authorization': f'Bearer {access_token}'}
 
