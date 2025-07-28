@@ -131,7 +131,7 @@ def embed_cover_art(audio, url):
             audio.clear_pictures()
             audio.add_picture(picture)
         else:
-            encoded_data = b64encode(picture_data.write())
+            encoded_data = b64encode(picture.write())
             vcomment_value = encoded_data.decode("ascii")
             audio['metadata_block_picture'] = [vcomment_value]
         audio.save()
