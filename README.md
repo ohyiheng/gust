@@ -1,7 +1,7 @@
 # gust - get your songs tagged
 
 ![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
-![Static Badge](https://img.shields.io/badge/version-0.1.2-blue?style=for-the-badge)
+![Static Badge](https://img.shields.io/badge/version-0.2.0-blue?style=for-the-badge)
 
 
 `gust` lets you automatically tag your local music files using metadata from Spotify.
@@ -32,7 +32,7 @@
 
 ## Installation
 
-Pre-built binaries are available in the [releases](https://github.com/ohyiheng/gust/releases) page.
+Pre-built binary for Linux is available on the [releases](https://github.com/ohyiheng/gust/releases) page.
 
 NOTE: Spotify API credentials are required. See: [Obtaining Spotify API Credentials](#obtaining-spotify-api-credentials).
 
