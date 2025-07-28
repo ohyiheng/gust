@@ -1,0 +1,24 @@
+[project]
+name = "gust"
+version = "0.1.2"
+description = ""
+authors = [
+    {name = "Yi Heng",email = "me@ohyiheng.com"}
+]
+readme = "README.md"
+requires-python = ">=3.9,<3.14"
+dependencies = [
+    "questionary (>=2.1.0,<3.0.0)",
+    "requests (>=2.32.4,<3.0.0)",
+    "mutagen (>=1.47.0,<2.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.4.1"
+pyinstaller = "^6.14.2"
+
