@@ -94,7 +94,6 @@ options:
 - [x] Add an option to choose from a list of query results
 - [x] Retrieve album images
 - [x] CLI parameters to customise the tagging process
-- [x] Cache Spotify access token
 - [ ] Rename files based on metadata
 - [ ] Retrieve lyrics using Netease Cloud Music API
 - [ ] Replay gain tags?
