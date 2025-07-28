@@ -1,8 +1,7 @@
-# gust - get your songs tagged
-
 ![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
 ![Static Badge](https://img.shields.io/badge/version-0.2.0-blue?style=for-the-badge)
 
+# gust - get your songs tagged
 
 `gust` lets you automatically tag your local music files using metadata from Spotify.
 
