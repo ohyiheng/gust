@@ -54,8 +54,10 @@ def config_write(config):
 def config_api():
     config = config_read()
     client_id, client_secret = _prompt_api()
-    config['api']['spotify_client_id'] = client_id
-    config['api']['spotify_client_secret'] = client_secret
+    if client_id:
+        config['api']['spotify_client_id'] = client_id
+    if client_secret:
+        config['api']['spotify_client_secret'] = client_secret
     config_write(config)
 
 def _prompt_api():
