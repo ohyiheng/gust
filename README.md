@@ -6,11 +6,13 @@
 
 `gust` lets you automatically tag your local music files using metadata from Spotify.
 
-Automatic tagging:
 ![demo](/static/demo.gif)
 
-Interactive mode:
+<details>
+<summary>Interactive mode: </summary>
+
 ![demo-interactive](/static/demo-interactive.gif)
+</details>
 
 ## Features
 
