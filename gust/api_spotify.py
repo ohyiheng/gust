@@ -5,7 +5,7 @@ import requests
 from config import config_read, config_write
 
 
-def fetch_tracks(query, limit=5):
+def fetch_tracks(query, limit=10):
     """
     Fetches tracks from Spotify API based on the given query.
 

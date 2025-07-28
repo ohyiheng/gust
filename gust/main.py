@@ -74,7 +74,7 @@ def main():
             print()
             print("Current File: " + "\033[1m" + str(audio.filename) + "\033[0m")
 
-            tracks = fetch_tracks(build_query(audio), 5)
+            tracks = fetch_tracks(build_query(audio), 10)
 
             # A list of track choices for the user to select from
             track_choices = []
