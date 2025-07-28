@@ -1,3 +1,4 @@
+import os
 import requests
 
 
@@ -21,7 +22,9 @@ def build_query(audio):
             query = f"https://api.spotify.com/v1/search?q={audio.tags['title']}+-+{audio.tags['artist']}&type=track" 
     # use filename for query as a last resort
     else:
-        query = f"https://api.spotify.com/v1/search?q={audio.filename}&type=track"
+        filename: str = audio.filename.split("\\" if os.name == 'nt' else "/")[-1] # only keep filename, remove parent paths
+        filename = filename[:filename.rfind(".")] # remove file extension
+        query = f"https://api.spotify.com/v1/search?q={filename}&type=track"
     return query
 
 def format_track_display(track_data):
