@@ -6,12 +6,12 @@ import os
 def _get_parser():
     parser = argparse.ArgumentParser(
         prog="gust",
-        description="Get Ur Songs Tagged with metadata from Spotify",
+        description="get your songs tagged with metadata from Spotify",
     )
 
     parser_subparsers = parser.add_subparsers(dest="command", required=True)
     parser_tag = parser_subparsers.add_parser("tag", help="tag music files")
-    parser_config = parser_subparsers.add_parser("config", help="configure GUST")
+    parser_config = parser_subparsers.add_parser("config", help="configure gust")
 
     parser_tag.add_argument(
         '-p', '--path',
@@ -37,7 +37,7 @@ def _get_parser():
         action='store_true',
         help="keep disc tags even if there's only one disc",
     )
-    
+
     parser_config_subparsers = parser_config.add_subparsers(
         dest="config_action",
         required=True,
